@@ -48,7 +48,7 @@ struct RequestExtensionDescription {
             
             params.append("method: HttpMethod = .\(self.methods.first!)")
             if let body = self.body {
-                params.append("body: [String : Any]\(body.required ? "" : "?")")
+                params.append("body: ElasticsearchBody\(body.required ? "" : "?")")
             }
             let path = url.path
                 .map({ (item) -> String in
@@ -81,6 +81,7 @@ struct RequestExtensionDescription {
                 continue
             }
             
+            // the typed method
             classString += "    /**\n"
             classString += "     * \(documentation)\n"
             for param in url.params {
@@ -95,11 +96,32 @@ struct RequestExtensionDescription {
             classString += "        assert(\(methods.map { "method == .\($0)" }.joined(separator: " || ")))\n"
             classString += "        let url = \"\(path)\"\n"
             if self.body != nil {
-                classString += "        return Request(method: method, url: url, body: body)\n"
+                if self.body!.required {
+                    classString += "        return Request(method: (method == .GET ? .POST : method), url: url, body: body.asJson())\n"
+                } else {
+                    classString += "        return Request(method: (method == .GET ? .POST : method), url: url, body: body?.asJson())\n"
+                }
             } else {
                 classString += "        return Request(method: method, url: url, body: nil)\n"
             }
-            classString += "    }\n"
+            classString += "    }\n\n"
+            
+            if self.body != nil {
+                // body as dictionary
+                classString += "    /**\n"
+                classString += "     * \(documentation)\n"
+                for param in url.params {
+                    classString += "     * - parameter \(param.key): \(param.value.description)\n"
+                }
+                classString += "     * - parameter method: The http method used to execute the request\n"
+                classString += "     * - parameter body: The body to be sent with the request\n"
+                classString += "     */\n"
+                classString += "    public static func \(name.replacingOccurrences(of: ".", with: "_"))(\(params.joined(separator: ", ").replacingOccurrences(of: "ElasticsearchBody", with: "[String : Any]"))) -> Request {\n"
+                classString += "        assert(\(methods.map { "method == .\($0)" }.joined(separator: " || ")))\n"
+                classString += "        let url = \"\(path)\"\n"
+                classString += "        return Request(method: (method == .GET ? .POST : method), url: url, body: body)\n"
+                classString += "    }\n"
+            }
         }
         classString += "}"
         return classString
