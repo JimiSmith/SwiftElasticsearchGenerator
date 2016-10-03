@@ -6,4 +6,4 @@ The resulting files are intended to be copied to into the SwiftElasticsearch pro
 
 ## License
 
-MIT Licensed. See the [LICENSE](/blob/master/LICENSE) file for details
+MIT Licensed. See the [LICENSE](/LICENSE) file for details
