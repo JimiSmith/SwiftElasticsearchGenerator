@@ -52,8 +52,8 @@ struct RequestExtensionDescription {
                         .replacingOccurrences(of: "{", with: "")
                         .replacingOccurrences(of: "}", with: "")
                     if let details = parts?[name] as? [String : Any] {
-                        return (name.snakeToCamelCaseName(), UrlParamDescription(type: ParamType.init(rawValue: details["type"] as! String)!,
-                                                                             description: details["description"] as! String))
+                        return (name, UrlParamDescription(type: ParamType.init(rawValue: details["type"] as! String)!,
+                                                          description: details["description"] as! String))
                     } else {
                         return nil
                     }
@@ -76,7 +76,7 @@ struct RequestExtensionDescription {
             body?.serialize = bodyJson["serialize"] as? String
         }
         
-        self.name = key.capitalized
+        self.name = key
         self.urls = urls
         self.methods = dict["methods"] as! [String]
         self.body = body
@@ -106,9 +106,9 @@ struct RequestExtensionDescription {
                         .replacingOccurrences(of: "}", with: "")
                     if let param = url.params[paramName] {
                         if param.type == .list {
-                            return "\\(\(paramName).joined(separator: \",\"))"
+                            return "\\(\(paramName.snakeToCamelCaseName()).joined(separator: \",\"))"
                         }
-                        return "\\(\(paramName))"
+                        return "\\(\(paramName.snakeToCamelCaseName()))"
                     }
                     if item == "_aliases" ||
                         item == "_warmers" ||
@@ -119,6 +119,8 @@ struct RequestExtensionDescription {
                     return item
                 })
                 .joined(separator: "/")
+            
+            params = params.map { $0.snakeToCamelCaseName() }
             
             if path.hasPrefix("/_cluster/nodes") ||
                 path.hasSuffix("/\\(type)/_mapping") ||
@@ -135,7 +137,7 @@ struct RequestExtensionDescription {
             builder.addLine("/**")
             builder.addLine(" * \(documentation)")
             for param in url.params {
-                builder.addLine(" * - parameter \(param.key): \(param.value.description)")
+                builder.addLine(" * - parameter \(param.key.snakeToCamelCaseName()): \(param.value.description)")
             }
             builder.addLine(" * - parameter method: The http method used to execute the request")
             if self.body != nil {
@@ -164,7 +166,7 @@ struct RequestExtensionDescription {
                 builder.addLine("/**")
                 builder.addLine(" * \(documentation)")
                 for param in url.params {
-                    builder.addLine(" * - parameter \(param.key): \(param.value.description)")
+                    builder.addLine(" * - parameter \(param.key.snakeToCamelCaseName()): \(param.value.description)")
                 }
                 builder.addLine(" * - parameter method: The http method used to execute the request")
                 builder.addLine(" * - parameter body: The body to be sent with the request")
